@@ -9,7 +9,6 @@ To do so, simply modify the parsing strings accordingly.
 - Downloading the HTML file with the correct data from JustETF
 - Parsing the HTML and extracting all relevant data for a given ETF’s ISIN
 - Support for both English and Italian pages, with customized output for each language
-- 
 
 ## Issues
 - Due to limited testing time, the script may encounter errors with ETFs that do not have a default page.
