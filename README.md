@@ -13,7 +13,8 @@ To do so, simply modify the parsing strings accordingly.
 ## Issues
 - Unfortunately, it's not possible to determine if an ISIN exists or not. If the ISIN does not exist, the program will encounter a general error.
 
-## Execution time of all cases before the program returns (Ryzen 7 5800H, 16GB DDR4 3200MHz)
+## Execution time of all cases before the program returns
+## (Ryzen 7 5800H, 16GB DDR4 3200MHz, 30Mbps download speed)
 - Case: Full page, language selected "it" = 1.317s
 - Case: Full page, language selected "en" = 1.281s
 - Case: Missing data, language selected "it" = 1.280s
