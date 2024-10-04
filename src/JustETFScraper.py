@@ -6,10 +6,11 @@ import time
 
 # Data scraping program for the JustETF site
 # This application collects data by downloading the HTML file from the site and parsing it.
+# You can call single functions in the main to get specific data or call the "scrap" function to get all the data at once
 # Author: Niccolò Quadrani
 # Date: 04/10/2024
 
-USELESS_DATA = 180 # Before rr. 180 the HTML file never contains usefull informations
+USELESS_DATA = 184 # Before rr. 184 the HTML file never contains usefull informations
 
 # Hash map used to manage multiple languages and data sets within a single script.
 splitHashMap = {"en": ["Top 10 Holdings", "Basics </h2>", "Countries", "Sectors", "Show more", "out of ", "Basics"], 
@@ -27,11 +28,12 @@ outputHashMap = {"en": ["FINAL DATA:", "Number of holdings:", ", the percentage 
 # Hash map used to manage multiple languages of the general data, separated from the outputHashMap just to make the code a little bit cleaner
 generalDataHashMap = {"en": ["Index","Investment focus","Fund size","Total expense ratio","Replication","Legal structure",
                              "Strategy risk","Sustainability","Fund currency","Currency risk","Volatility 1 year (in EUR)",
-                             "Inception/ Listing Date","Distribution policy","Distribution frequency","Fund domicile","Fund Provider"],
+                             "Inception/ Listing Date","Distribution policy","Distribution frequency","Fund domicile","Fund Provider", "General data:"],
                       "it": ["Indice","Focus di investimento","Dimensione del fondo","Indicatore sintetico di spesa (TER)","Replicazione",
                              "Struttura legale","Rischio di strategia","Sostenibilità","Valuta dell'ETF","Rischio di cambio","Volatilità ad 1 anno (in EUR)",
-                             "Data di lancio/ quotazione","Politica di distribuzione","Frequenza di distribuzione","Domicilio del fondo","Emittente"]}
+                             "Data di lancio/ quotazione","Politica di distribuzione","Frequenza di distribuzione","Domicilio del fondo","Emittente", "Dati generali:"]}
 
+# Hash map used to manage multiple languages when missing data occurs
 dataNotFoundHashMap = {"en": ["Data not found", "It is impossible to retrieve the holdings data."], 
                        "it": ["Dati non disponibili","Impossibile reperire i dati riferiti alle partecipazioni dell'ETF"]}
 
@@ -47,16 +49,27 @@ def debug(debug):
     for s in debug:
         print(f"{s}\n")
  
-########################################################################################## Data handling functions
-        
-def getTicker(tickerString):
+##########################################################################################
+# Data Handling Functions
+#
+# How to use the functions correctly:
+# Each function accepts two or three parameters.
+# If required, specify the language of the file using the "language" parameter (The only two supported languages are "en" or "it").
+# For the first string parameter and the flag, follow the instructions below:
+# Set the "flag" attribute to "True" if you want to call a specific function (e.g. To get the Ticker, use "getTicker(string, True)") without retrieving other data.
+# If the flag is set to "True," the "string" parameter should be the entire HTML file downloaded using the "urlretrieve(url, htmlFilePath)" function.
+# The "flag" attribute gonna be "False" only in the case where you want all the parameters and you allready have all the right strings to parse (e.g. the "scraper" function)
+#
+##########################################################################################
+
+def getTicker(tickerString, singleFunctionCall):
     # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF
     split = tickerString.split("</title>")
     split = split[0].split("|")
     ticker = split[1].replace(" ", "")
     return ticker
     
-def getName(nameString):
+def getName(nameString, singleFunctionCall):
     # Getting the Name of the ETF from the "name" string 
     split = nameString.split("</title>")
     split = split[0].split("|")
@@ -66,7 +79,7 @@ def getName(nameString):
     name = "".join(listName)
     return name
 
-def getPercTenHoldings(tenHoldingsString, language):
+def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
         # Getting the percentage of the first 10 participations and the total number of holdings of the ETF
         split = tenHoldingsString.split("<div>")
         split = split[3].split("</span>")
@@ -75,7 +88,7 @@ def getPercTenHoldings(tenHoldingsString, language):
         percTenHoldings = split[4].replace("span>", "")
         return [nHoldings, percTenHoldings]
 
-def getHoldingsData(sHolding):
+def getHoldingsData(sHolding, singleFunctionCall):
     holdings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]  # len=20, max number of holdings shown on JustETF is 10
     for n in range(len(sHolding) - 1):
         if n % 2 == 0:
@@ -91,7 +104,7 @@ def getHoldingsData(sHolding):
              
     return holdings
 
-def getCountriesData(sCountries):
+def getCountriesData(sCountries, singleFunctionCall):
     countries = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of countries shown on JustETF is 5
     print("\nDEBUG: Collecting countries data\n")
     for n in range(len(sCountries) - 1):
@@ -107,7 +120,7 @@ def getCountriesData(sCountries):
             
     return countries
         
-def getSectorsData(sSectors):
+def getSectorsData(sSectors, singleFunctionCall):
     sectors = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of sectors shown on JustETF is 5
     print("\nDEBUG: Collecting sectors data\n")       
     for n in range(len(sSectors) - 1):
@@ -123,7 +136,7 @@ def getSectorsData(sSectors):
             
     return sectors
 
-def getGeneralInformations(sInformations,language):
+def getGeneralInformations(sInformations, language, singleFunctionCall):
     finalData = ["","","","","","","","","","","","","","","",""]
     print("\nDEBUG: Collecting ETF general data\n")
     sInformations = sInformations.split(splitHashMap[language][6])
@@ -184,7 +197,8 @@ def scraper(myISIN, myLanguage):
     try:
         isin = myISIN.upper() # The ISIN letters are allways uppercase
         language = myLanguage.lower()  # Making the script not case-sensitive
-        supported_languages = ["en", "it"] # List of the implemented languages 
+        supported_languages = ["en", "it"] # List of the implemented languages
+        callFlag = False
         
         if language not in supported_languages:
             print("\nERROR: The selected language is not implemented yet")
@@ -246,8 +260,8 @@ def scraper(myISIN, myLanguage):
                 ticker = data[x + USELESS_DATA]
                 print("DEBUG: Ticker found")
 
-        ticker = getTicker(name)
-        name = getName(name)
+        ticker = getTicker(name, callFlag)
+        name = getName(name, callFlag)
 
         # Getting countries, sectors and holdings data from the "stateAndSectorData" string
         if flagState == 1:
@@ -264,9 +278,9 @@ def scraper(myISIN, myLanguage):
             splitCountries = splitCountries.split("<td>")
             splitSectors = splitSectors.split("<td>")
             
-            arrHoldings = getHoldingsData(splitholdings)
-            arrCountries = getCountriesData(splitCountries)
-            arrSectors = getSectorsData(splitSectors)
+            arrHoldings = getHoldingsData(splitholdings, callFlag)
+            arrCountries = getCountriesData(splitCountries, callFlag)
+            arrSectors = getSectorsData(splitSectors, callFlag)
             
             #Formatting the countries and sectors data correctly
             sCountries = ""
@@ -300,44 +314,47 @@ def scraper(myISIN, myLanguage):
             sSectors = dataNotFoundHashMap[language][0]
                
         if flagPartecipation:     
-            HoldingsData = getPercTenHoldings(firstTenPartecipations, language)
+            HoldingsData = getPercTenHoldings(firstTenPartecipations, language, callFlag)
             nHoldings = HoldingsData[0]
-            percTenHoldings = HoldingsData[1]
-            
+            percTenHoldings = HoldingsData[1]     
         else: # Some ETFs may not contain the data about number of holdings and percentage of the first 10 holdings on the JustETF page
-            nHoldings = dataNotFoundHashMap[language][0]
-            percTenHoldings = dataNotFoundHashMap[language][0]
+            nHoldings = "-"
+            percTenHoldings = "-"
             
-        finalGeneralData = getGeneralInformations(generalData, language)
+        finalGeneralData = getGeneralInformations(generalData, language, callFlag)
         
         ########################################################################################### 
-        # Print of the final data
-        print("\n---------------------------------------------------------------------------\n")
-        # Final debug with print
-        print(f"{outputHashMap[language][0]} \n")
-        print(f"ETF: {name}, Ticker: \"{ticker}\", ISIN: {isin}\n")
-        print(f"{outputHashMap[language][1]} {nHoldings}{outputHashMap[language][2]} {percTenHoldings}\n")  
-        
+        # Output data formatting
+        outputString = ""
+        outputString += (f"ETF: {name}, Ticker: \"{ticker}\", ISIN: {isin}\n")
+        outputString += (f"{outputHashMap[language][1]} {nHoldings}{outputHashMap[language][2]} {percTenHoldings}\n\n")
+    
         if flagPartecipation == 1:
-            print(f"{outputHashMap[language][3]}")    
+            outputString += (f"{outputHashMap[language][3]}\n")    
             for i in range(int(len(arrHoldings)/2)):
-                print(f"{outputHashMap[language][6]}: {arrHoldings[i*2]} {outputHashMap[language][7]} {arrHoldings[i*2+1]}")
+                outputString += (f"{outputHashMap[language][6]}: {arrHoldings[i*2]} {outputHashMap[language][7]} {arrHoldings[i*2+1]}\n")
         else:
-            print(f"{dataNotFoundHashMap[language][1]}") 
-              
-        print(f"\n{outputHashMap[language][4]} {sCountries}")
-        print(f"{outputHashMap[language][5]} {sSectors}\n")
+             outputString += (f"{dataNotFoundHashMap[language][1]}\n") 
+
+        outputString += (f"\n{outputHashMap[language][4]} {sCountries}\n")
+        outputString += (f"{outputHashMap[language][5]} {sSectors}\n\n")
+        outputString += (f"{generalDataHashMap[language][len(generalDataHashMap[language])-1]}\n")
         for i in range(len(finalGeneralData)):
-            print(f"{generalDataHashMap[language][i]}: {finalGeneralData[i]}")
+            outputString += (f"{generalDataHashMap[language][i]}: {finalGeneralData[i]}\n")
+        
+        #Final print for debug purposes
+        print("\n---------------------------------------------------------------------------\nDEBUG:") 
+        print(f"{outputHashMap[language][0]} \n")
+        print(outputString)
         # End of the final print debug
                      
         cleanHtml(htmlFilePath) #Cleaning the file
-        return 0
+        return outputString
     
     except Exception as e:
         print(f"\nERROR: Unexpected error occoured, please verify the ISIN and retry")
         # Unomment this out show the error that caused the program to fail
-        #print(f"DEBUG: The error the program runned in is \"{e}\"\n") 
+        print(f"DEBUG: The error the program runned in is \"{e}\"\n") 
         # All errors are likely caused by the non-existence of the inserted ISIN.
         print("---------------------------------------------------------------------------\n")
         cleanHtml(htmlFilePath)
@@ -348,7 +365,7 @@ def scraper(myISIN, myLanguage):
 
 # To successfully call the function, insert the ISIN as the first parameter and the language as the second parameter.
 # The only two languages supported at the moment are Italian (IT) and English (EN).
-# The function returns -1 in case of an error and returns 0 if the process succeeds.
+# The function returns -1 in case of an error and returns the data if the process succeeds.
 
 t1 = time.time()
 ack = scraper("IE00B4L5Y983", "it") #Case language selected: Italian
