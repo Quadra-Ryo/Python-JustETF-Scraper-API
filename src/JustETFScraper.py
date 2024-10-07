@@ -8,7 +8,7 @@ import time
 # This application collects data by downloading the HTML file from the site and parsing it.
 # You can call single functions in the main to get specific data or call the "scrap" function to get all the data at once
 # Author: Niccolò Quadrani
-# Date: 04/10/2024
+# Date: 07/10/2024
 
 USELESS_DATA = 184 # Before rr. 184 the HTML file never contains usefull informations
 
@@ -49,6 +49,35 @@ def debug(debug):
     for s in debug:
         print(f"{s}\n")
  
+def getFile(ISIN, language):
+    isin = ISIN.upper() # The ISIN letters are allways uppercase
+    language = language.lower()  # Making the script not case-sensitive
+    supported_languages = ["en", "it"] # List of the implemented languages
+    
+    if language not in supported_languages:
+        print("\nERROR: The selected language is not implemented yet")
+        return -1
+    
+    if len(isin) != 12:
+        print("\nERROR: Bad ISIN format, please check the ISIN code")
+        return -1
+    
+    # Getting the correct link
+    url = f"https://www.justetf.com/{language}/etf-profile.html?isin={isin}#overview"
+    htmlFilePath = f"resources/etf.html"
+    
+    # Downloading the HTML from the site
+    urlretrieve(url, htmlFilePath)
+    htmlFilePath, headers = urlretrieve(url, htmlFilePath)
+    print(f"\nDEBUG: Success! ETF data downloaded to \"{htmlFilePath}\"")
+
+    # Opening and reading the downloaded file
+    with open(htmlFilePath, 'r', encoding="utf8") as file:
+        output = file.read()
+    
+    output = output.split("\n")
+    return output
+
 ##########################################################################################
 # Data Handling Functions
 #
@@ -63,14 +92,22 @@ def debug(debug):
 ##########################################################################################
 
 def getTicker(tickerString, singleFunctionCall):
-    # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF
+    # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF    
     split = tickerString.split("</title>")
     split = split[0].split("|")
     ticker = split[1].replace(" ", "")
     return ticker
+
+def getName(nameString, singleFunctionCall):   
+    # Getting the Name of the ETF from the "name" string
     
-def getName(nameString, singleFunctionCall):
-    # Getting the Name of the ETF from the "name" string 
+    if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
+        for x in range(len(nameString) - USELESS_DATA -1):            
+            if "<title>" in nameString[x + USELESS_DATA]:
+                nameString = nameString[x + USELESS_DATA]
+                print("\nDEBUG: Title found")
+                break
+                       
     split = nameString.split("</title>")
     split = split[0].split("|")
     name = split[0].replace("<title>", "")
@@ -81,6 +118,14 @@ def getName(nameString, singleFunctionCall):
 
 def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
         # Getting the percentage of the first 10 participations and the total number of holdings of the ETF
+        
+        if singleFunctionCall:
+            for x in range(len(tenHoldingsString) - USELESS_DATA -1):
+                if splitHashMap[language][0] in tenHoldingsString[x + USELESS_DATA]:
+                    tenHoldingsString = tenHoldingsString[x + USELESS_DATA]
+                    print("DEBUG: Holdings data found")
+                    break
+                
         split = tenHoldingsString.split("<div>")
         split = split[3].split("</span>")
         split = split[0].split("<")
@@ -90,6 +135,7 @@ def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
 
 def getHoldingsData(sHolding, singleFunctionCall):
     holdings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]  # len=20, max number of holdings shown on JustETF is 10
+                 
     for n in range(len(sHolding) - 1):
         if n % 2 == 0:
             holdings[n] = sHolding[n + 1].split("\"")
@@ -138,6 +184,14 @@ def getSectorsData(sSectors, singleFunctionCall):
 
 def getGeneralInformations(sInformations, language, singleFunctionCall):
     finalData = ["","","","","","","","","","","","","","","",""]
+    
+    if singleFunctionCall:
+        for x in range(len(sInformations) - USELESS_DATA -1):
+            if splitHashMap[language][1] in sInformations[x + USELESS_DATA]:
+                    sInformations = sInformations[x + USELESS_DATA]
+                    print("DEBUG: General data found")
+                    break
+                
     print("\nDEBUG: Collecting ETF general data\n")
     sInformations = sInformations.split(splitHashMap[language][6])
     #debug(sInformations)
@@ -190,74 +244,56 @@ def scraper(myISIN, myLanguage):
     flagName = 0 
     flagState = 0
     flagTicker = 0
-    
+    callFlag = False
+    url = False
     ##########################################################################################
     # Basic error handling and data download
     # URL composition and HTML download
     try:
-        isin = myISIN.upper() # The ISIN letters are allways uppercase
-        language = myLanguage.lower()  # Making the script not case-sensitive
-        supported_languages = ["en", "it"] # List of the implemented languages
-        callFlag = False
         
-        if language not in supported_languages:
-            print("\nERROR: The selected language is not implemented yet")
+        htmlData = getFile(myISIN, myLanguage)
+        if htmlData != -1: #Case where both language and ISIN are good
+            htmlFilePath = f"https://www.justetf.com/{myLanguage}/etf-profile.html?isin={myISIN}#overview"
+            isin = myISIN.upper() # The ISIN letters are allways uppercase
+            language = myLanguage.lower()  # Making the script not case-sensitive
+        else:
             return -1
-        
-        if len(myISIN) != 12:
-            print("\nERROR: Bad ISIN format, please check the ISIN code")
-            return -1
-        
-        # Getting the correct link
-        url = f"https://www.justetf.com/{language}/etf-profile.html?isin={isin}#overview"
-        htmlFilePath = f"resources/etf.html"
-        
-        # Downloading the HTML from the site
-        urlretrieve(url, htmlFilePath)
-        htmlFilePath, headers = urlretrieve(url, htmlFilePath)
-        print(f"\nDEBUG: Success! ETF data downloaded to \"{htmlFilePath}\"")
-
-        # Opening and reading the downloaded file
-        with open(htmlFilePath, 'r', encoding="utf8") as file:
-            htmlData = file.read()
         
         ##########################################################################################
-        # Data handling
-        data = htmlData.split("\n")
         # Finding the correct lines with the data by cycling through all the rows in the HTML file
         flagState = 0
-        for x in range(len(data) - USELESS_DATA):
+        for x in range(len(htmlData) - USELESS_DATA):
             
             if flagName == 1 and flagData == 1 and flagPartecipation == 1 and flagTicker == 1 and flagState == 1:
                 print("DEBUG: All data found")
                 break
             
-            if "<title>" in data[x + USELESS_DATA]:
-                name = data[x + USELESS_DATA]
+            if "<title>" in htmlData[x + USELESS_DATA]:
+                name = htmlData[x + USELESS_DATA]
                 print("\nDEBUG: Title found")
                 flagName = 1
                 
-            if splitHashMap[language][0] in data[x + USELESS_DATA]:
-                firstTenPartecipations = data[x + USELESS_DATA]
+            if splitHashMap[language][0] in htmlData[x + USELESS_DATA]:
+                firstTenPartecipations = htmlData[x + USELESS_DATA]
                 print("DEBUG: Holdings data found")
                 flagPartecipation = 1
                 
-            if splitHashMap[language][1] in data[x + USELESS_DATA]:
-                generalData = data[x + USELESS_DATA]
+            if splitHashMap[language][1] in htmlData[x + USELESS_DATA]:
+                generalData = htmlData[x + USELESS_DATA]
                 print("DEBUG: General data found")
                 flagData = 1
                 
-            if splitHashMap[language][2] in data[x + USELESS_DATA]:
+            if splitHashMap[language][2] in htmlData[x + USELESS_DATA]:
                 if flagState == 0:
                     flagState = 2
                 else:
-                    stateAndSectorData = data[x + USELESS_DATA]
+                    stateAndSectorData = htmlData[x + USELESS_DATA]
                     print("DEBUG: State data found")
                     flagState = 1
                     
-            if "Ticker" in data[x + USELESS_DATA] and flagTicker == 0:
+            if "Ticker" in htmlData[x + USELESS_DATA] and flagTicker == 0:
                 flagTicker = 1
-                ticker = data[x + USELESS_DATA]
+                ticker = htmlData[x + USELESS_DATA]
                 print("DEBUG: Ticker found")
 
         ticker = getTicker(name, callFlag)
@@ -284,30 +320,30 @@ def scraper(myISIN, myLanguage):
             
             #Formatting the countries and sectors data correctly
             sCountries = ""
-            i = 0
-            for s in arrCountries:
-                if s != "":
-                    if i % 2 == 0:
-                        sCountries += f"\"{s}\": "
-                        i += 1
-                    else:
-                        sCountries += f"{s}, "
-                        i += 1
+            for i, s in enumerate(arrCountries):
+                if s == "": break
+                if i % 2 == 0:
+                    sCountries += f"\"{s}\": "
+                    i += 1
                 else:
-                    break
-                
+                    sCountries += f"{s}, "
+                    i += 1
+              
             sSectors = ""
-            i = 0
-            for s in arrSectors:
-                if s != "":
-                    if i % 2 == 0:
-                        sSectors += f"\"{s}\": "
-                        i += 1
-                    else:
-                        sSectors += f"{s}, "
-                        i += 1
+            for i, s in enumerate(arrSectors):
+                if s == "": break
+                if i % 2 == 0:
+                    sSectors += f"\"{s}\": "
+                    i += 1
                 else:
-                    break
+                    sSectors += f"{s}, "
+                    i += 1
+            listName = list(sSectors)
+            listName[len(sSectors) - 2] = ""
+            sSectors = "".join(listName)
+            listName = list(sCountries)
+            listName[len(sCountries) - 2] = ""
+            sCountries = "".join(listName)
             
         else: # Some ETFs may not contain the data about holdings, countries and sectors on the JustETF page
             sCountries = dataNotFoundHashMap[language][0]
@@ -367,27 +403,53 @@ def scraper(myISIN, myLanguage):
 # The only two languages supported at the moment are Italian (IT) and English (EN).
 # The function returns -1 in case of an error and returns the data if the process succeeds.
 
+#t1 = time.time()
+#ack = scraper("IE00B4L5Y983", "it") #Case language selected: Italian
+#t2 = time.time()
+#ack = scraper("IE00B4L5Y983", "en") #Case language selected: English
+#t3 = time.time()
+#ack = scraper("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
+#t4 = time.time()
+#ack = scraper("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
+#t5 = time.time()
+#ack = scraper("IE00B4L5Y983", "de") #Case language selected not implemented
+#t6 = time.time()
+#ack = scraper("IEY983", "en") #Case ISIN not in the right format
+#t7 = time.time()
+#ack = scraper("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
+#t8 = time.time()
+
+#print(f"DEBUG: Full page, language selected \"it\": {t2-t1}s")
+#print(f"DEBUG: Full page, language selected \"en\": {t3-t2}s")
+#print(f"DEBUG: Missing data, language selected \"it\": {t4-t3}s")
+#print(f"DEBUG: Missing data, language selected \"en\": {t5-t4}s")
+#print(f"DEBUG: Error type \"Language not implemented\": {t6-t5}s")
+#print(f"DEBUG: Error type \"ISIN not in the right format\": {t7-t6}s")
+#print(f"DEBUG: Error type \"The current ISIN does not exist\": \"en\": {t8-t7}s")
+
+# Debug and example on how to use the functions to get single datas:
+
+language = "it"
+isin = "IE00B4L5Y983"
+htmlFile = getFile(isin, language)
 t1 = time.time()
-ack = scraper("IE00B4L5Y983", "it") #Case language selected: Italian
+name = getName(htmlFile, True) # Returns the name of the ETF as a string
 t2 = time.time()
-ack = scraper("IE00B4L5Y983", "en") #Case language selected: English
+tenHold = getPercTenHoldings(htmlFile, language, True) # Returns an array [numberOfHoldings, percentageFirstTenHoldings]
 t3 = time.time()
-ack = scraper("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
+generalData = getGeneralInformations(htmlFile, language, True)  # Returns an array ["Index","Investment focus","Fund size","Total expense ratio","Replication","Legal structure",
+                                                                #"Strategy risk","Sustainability","Fund currency","Currency risk","Volatility 1 year (in EUR)",
+                                                                #"Inception/ Listing Date","Distribution policy","Distribution frequency","Fund domicile","Fund Provider", "General data:"]
 t4 = time.time()
-ack = scraper("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
-t5 = time.time()
-ack = scraper("IE00B4L5Y983", "de") #Case language selected not implemented
-t6 = time.time()
-ack = scraper("IEY983", "en") #Case ISIN not in the right format
-t7 = time.time()
-ack = scraper("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
-t8 = time.time()
+#ticker = getTicker(htmlFile, True)
+print(f"DEBUG: The ETF Name is {name}")
+print(f"DEBUG: The ETF have {tenHold[0]} holdings and the percentage of the first 10 holdings is {tenHold[1]}")
+print(f"DEBUG: {generalData}")
+#print(f"Ticker: {ticker}")
 
+print(f"DEBUG: Time to get the name: {t2-t1}")
+print(f"DEBUG: Time to get percentage: {t3-t2}")
+print(f"DEBUG: Time to get general data: {t4-t3}")
 
-print(f"DEBUG: Full page, language selected \"it\": {t2-t1}s")
-print(f"DEBUG: Full page, language selected \"en\": {t3-t2}s")
-print(f"DEBUG: Missing data, language selected \"it\": {t4-t3}s")
-print(f"DEBUG: Missing data, language selected \"en\": {t5-t4}s")
-print(f"DEBUG: Error type \"Language not implemented\": {t6-t5}s")
-print(f"DEBUG: Error type \"ISIN not in the right format\": {t7-t6}s")
-print(f"DEBUG: Error type \"The current ISIN does not exist\": \"en\": {t8-t7}s")
+htmlFilePath = f"resources/etf.html"
+cleanHtml(htmlFilePath)
