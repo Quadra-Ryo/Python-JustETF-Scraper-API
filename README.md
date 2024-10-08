@@ -30,3 +30,4 @@ There are two versions of the software: one in Italian and one in English. Only 
 - Case: getName(file, True) function called = 0.001s
 - Case: getPercTenHoldings(file, language, True) function called = 0.001s
 - Case: getGeneralInformations(file, language, True) function called = 0.001s
+- Case: getTicker(tickerString, singleFunctionCall) function called = 0.001s
