@@ -96,7 +96,7 @@ def getFile(ISIN, language):
 # For the first string parameter and the flag, follow the instructions below:
 # Set the "flag" attribute to "True" if you want to call a specific function (e.g. To get the Ticker, use "getTicker(string, True)") without retrieving other data.
 # If the flag is set to "True," the "string" parameter should be the entire HTML file downloaded using the "urlretrieve(url, htmlFilePath)" function.
-# The "flag" attribute gonna be "False" only in the case where you want all the parameters and you allready have all the right strings to parse (e.g. the "scraper" function)
+# The "flag" attribute gonna be "False" only in the case where you want all the parameters and you allready have all the right strings to parse (e.g. the "scrap" function)
 
 ##########################################################################################
 
@@ -118,7 +118,7 @@ def getTicker(tickerString, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
 
 def getName(nameString, singleFunctionCall):   
@@ -142,7 +142,7 @@ def getName(nameString, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
 
 def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
@@ -165,12 +165,25 @@ def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
         
-def getHoldingsData(sHolding, singleFunctionCall):
+def getHoldingsData(sHolding, language, singleFunctionCall):
     holdings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]  # len=20, max number of holdings shown on JustETF is 10
+    flagState = 0
     try:
+        if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
+            for x in range(len(sHolding) - USELESS_DATA -1):
+                if splitHashMap[language][2] in sHolding[x + USELESS_DATA]:
+                    if flagState == 0:
+                        flagState = 1
+                    else:
+                        sHolding = sHolding[x + USELESS_DATA]
+                        print("DEBUG: State data found")
+            
+            sHolding = sHolding.split(splitHashMap[language][2])
+            sHolding = sHolding[0].split("<td>")        
+        
         for n in range(len(sHolding) - 1):
             if n % 2 == 0:
                 holdings[n] = sHolding[n + 1].split("\"")
@@ -187,12 +200,30 @@ def getHoldingsData(sHolding, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
 
-def getCountriesData(sCountries, singleFunctionCall):
+def getCountriesData(sCountries, language, singleFunctionCall):
     countries = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of countries shown on JustETF is 5
+    flagState = 0
+    
     try:
+        if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
+            for x in range(len(sCountries) - USELESS_DATA -1):
+                if splitHashMap[language][2] in sCountries[x + USELESS_DATA]:
+                    if flagState == 0:
+                        flagState = 1
+                    else:
+                        sCountries = sCountries[x + USELESS_DATA]
+                        print("DEBUG: State data found")
+                        
+            split1 = sCountries.split(splitHashMap[language][2])
+            sCountries = split1[1]
+            sCountries = sCountries.split(splitHashMap[language][3])
+            sCountries = sCountries[0].split(splitHashMap[language][4])
+            sCountries = sCountries[0]
+            sCountries = sCountries.split("<td>")
+                       
         print("\nDEBUG: Collecting countries data\n")
         for n in range(len(sCountries) - 1):
             if n % 2 == 0:
@@ -209,12 +240,31 @@ def getCountriesData(sCountries, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        print(f"The program runned into the error: {e}")
         return "-"
                 
-def getSectorsData(sSectors, singleFunctionCall):
+def getSectorsData(sSectors, language, singleFunctionCall):
     sectors = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of sectors shown on JustETF is 5
+    flagState = 0
+    
     try:
+        if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
+            for x in range(len(sSectors) - USELESS_DATA -1):
+                if splitHashMap[language][2] in sSectors[x + USELESS_DATA]:
+                    if flagState == 0:
+                        flagState = 1
+                    else:
+                        sSectors = sSectors[x + USELESS_DATA]
+                        print("DEBUG: Sectors data found")
+                        break
+                    
+            split1 = sSectors.split(splitHashMap[language][2])
+            split1 = split1[1]
+            split1 = split1.split(splitHashMap[language][3])
+            sSectors = split1[1].split(splitHashMap[language][4])
+            sSectors = sSectors[0]
+            sSectors = sSectors.split("<td>")
+            
         print("\nDEBUG: Collecting sectors data\n")       
         for n in range(len(sSectors) - 1):
             if n % 2 == 0:
@@ -231,7 +281,7 @@ def getSectorsData(sSectors, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
         
 def getGeneralInformations(sInformations, language, singleFunctionCall):
@@ -282,12 +332,12 @@ def getGeneralInformations(sInformations, language, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print("The program runned into the error: {e}")
+        #print(f"The program runned into the error: {e}")
         return "-"
         
 ########################################################################################## Scraping all data using the functions
     
-def scraper(myISIN, myLanguage):
+def scrap(myISIN, myLanguage):
     print("\n---------------------------------------------------------------------------")
 
     # Initialize htmlDataiables for extracting ETF data
@@ -340,11 +390,10 @@ def scraper(myISIN, myLanguage):
                 
             if splitHashMap[language][2] in htmlData[x + USELESS_DATA]:
                 if flagState == 0:
-                    flagState = 2
+                    flagState = 1
                 else:
                     stateAndSectorData = htmlData[x + USELESS_DATA]
                     print("DEBUG: State data found")
-                    flagState = 1
 
         ticker = getTicker(name, callFlag)
         name = getName(name, callFlag)
@@ -364,9 +413,9 @@ def scraper(myISIN, myLanguage):
             splitCountries = splitCountries.split("<td>")
             splitSectors = splitSectors.split("<td>")
             
-            arrHoldings = getHoldingsData(splitholdings, callFlag)
-            arrCountries = getCountriesData(splitCountries, callFlag)
-            arrSectors = getSectorsData(splitSectors, callFlag)
+            arrHoldings = getHoldingsData(splitholdings, language, callFlag)
+            arrCountries = getCountriesData(splitCountries, language, callFlag)
+            arrSectors = getSectorsData(splitSectors, language, callFlag)
             
             #Formatting the countries and sectors data correctly
             sCountries = ""
@@ -456,19 +505,19 @@ if __name__ == "__main__":
     # The function returns -1 in case of an error and returns the data if the process succeeds.
 
     #t1 = time.time()
-    #ack = scraper("IE00B4L5Y983", "it") #Case language selected: Italian
+    #ack = scrap("IE00B4L5Y983", "it") #Case language selected: Italian
     #t2 = time.time()
-    #ack = scraper("IE00B4L5Y983", "en") #Case language selected: English
+    #ack = scrap("IE00B4L5Y983", "en") #Case language selected: English
     #t3 = time.time()
-    #ack = scraper("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
+    #ack = scrap("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
     #t4 = time.time()
-    #ack = scraper("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
+    #ack = scrap("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
     #t5 = time.time()
-    #ack = scraper("IE00B4L5Y983", "de") #Case language selected not implemented
+    #ack = scrap("IE00B4L5Y983", "de") #Case language selected not implemented
     #t6 = time.time()
-    #ack = scraper("IEY983", "en") #Case ISIN not in the right format
+    #ack = scrap("IEY983", "en") #Case ISIN not in the right format
     #t7 = time.time()
-    #ack = scraper("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
+    #ack = scrap("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
     #t8 = time.time()
 
     #print(f"\nDEBUG: Full page, language selected \"it\": {t2-t1}s")
@@ -485,27 +534,35 @@ if __name__ == "__main__":
 
     language = "it"
     isin = "IE00B4L5Y983"
-    htmlFile = getFile(isin, language)
     t1 = time.time()
-    name = getName(htmlFile, True) # Returns the name of the ETF as a string
+    htmlFile = getFile(isin, language) # Getting the html file to parse
     t2 = time.time()
-    tenHold = getPercTenHoldings(htmlFile, language, True) # Returns an array [numberOfHoldings, percentageFirstTenHoldings]
+    name = getName(htmlFile, True) # Getting the name
     t3 = time.time()
-    generalData = getGeneralInformations(htmlFile, language, True)  # Returns an array ["Index","Investment focus","Fund size","Total expense ratio","Replication","Legal structure",
-                                                                    #"Strategy risk","Sustainability","Fund currency","Currency risk","Volatility 1 year (in EUR)",
-                                                                    #"Inception/ Listing Date","Distribution policy","Distribution frequency","Fund domicile","Fund Provider", "General data:"]
+    ticker = getTicker(htmlFile, True) # Getting the ticker
     t4 = time.time()
-    ticker = getTicker(htmlFile, True) # Returns the ticker of the ETF as a string
+    generalData = getGeneralInformations(htmlFile, language, True) #Getting all the general data as an array
     t5 = time.time()
-    print(f"DEBUG: The ETF Name is {name}")
-    print(f"DEBUG: The ETF have {tenHold[0]} holdings and the percentage of the first 10 holdings is {tenHold[1]}")
-    print(f"DEBUG: {generalData}")
-    print(f"DEBUG: Ticker: {ticker}")
+    tenHold = getPercTenHoldings(htmlFile, language, True) # Getting the data relevant to the number and percentage of holdings of the ETF
+    t6 = time.time()
+    holdingsData = getHoldingsData(htmlFile, language, True) # Returns all the data of the Holdings as an array
+    t7 = time.time()
+    sectorsData =  getSectorsData(htmlFile, language, True) # Returns all the data of the sectors as an array
+    t8 = time.time()
+    countriesData = getCountriesData(htmlFile, language, True) # Returns all the data of the countries as an array
+    t9 = time.time()
+    totaleScarp = scrap(isin, language) # Getting all the data and a formatted output string to return
+    t10 = time.time()
 
-    print(f"\nDEBUG: Time to get the name: {t2-t1}")
-    print(f"DEBUG: Time to get percentage: {t3-t2}")
-    print(f"DEBUG: Time to get general data: {t4-t3}")
-    print(f"DEBUG: Time to get the ticker data: {t5-t4}")
+    print(f"\nDEBUG: Time to get the file: {t2-t1}")
+    print(f"DEBUG: Time to get name: {t3-t2}")
+    print(f"DEBUG: Time to get ticker: {t4-t3}")
+    print(f"DEBUG: Time to get the general data: {t5-t4}")
+    print(f"\nDEBUG: Time to get the ten holdings data: {t6-t5}")
+    print(f"DEBUG: Time to get holdings data: {t7-t6}")
+    print(f"DEBUG: Time to get sectors data: {t8-t7}")
+    print(f"DEBUG: Time to get the countries data: {t9-t8}")
+    print(f"DEBUG: Time to get the total scarp: {t10-t9}")
     print("\n")
     cleanHtml()
-    ack = scraper("IE00B4L5Y983", "it") #Case language selected: Italian
+    ack = scrap("IE00B4L5Y983", "it") #Case language selected: Italian
