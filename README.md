@@ -27,7 +27,12 @@ There are two versions of the software: one in Italian and one in English. Only 
 - Case: Error type "Language not implemented" = 0.000s
 - Case: Error type "ISIN bad format" = 0.001s
 - Case: Error type "ISIN not existing" = 1.408s
+- Case: getFile(isin, language) function called = 1.102s
 - Case: getName(file, True) function called = 0.001s
 - Case: getPercTenHoldings(file, language, True) function called = 0.001s
 - Case: getGeneralInformations(file, language, True) function called = 0.001s
 - Case: getTicker(tickerString, singleFunctionCall) function called = 0.001s
+- Case: getTicker(tickerString, singleFunctionCall) function called = 0.001s
+- Case: getHoldingsData(htmlFile, language, True) function called = 0.003s
+- Case: getSectorsData(htmlFile, language, True) function called = 0.002s
+- Case: getCountriesData(htmlFile, language, True) function called = 0.002s
