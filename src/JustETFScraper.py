@@ -1,30 +1,38 @@
 import os
 from urllib.request import urlretrieve
-from os import listdir
-from os.path import isfile, join
-import time 
+import time
 
 # Data scraping program for the JustETF site
 # This application collects data by downloading the HTML file from the site and parsing it.
-# You can call single functions in the main to get specific data or call the "scrap" function to get all the data at once
+# You can call single functions in the main to get specific data or call the "scrape" function to get all the data at once
 # Author: Niccolò Quadrani
-# Date: 07/10/2024
+# Date: 10/10/2024
+
+##########################################################################################
+# In case you don't want to show the debug print on the console
+# CTRL + F -> Find "print" -> Replace "#print"
+# To switch back to the debug mode 
+# CTRL + F -> Find "#print" -> Replace "print"
+##########################################################################################
 
 USELESS_DATA = 184 # Before rr. 184 the HTML file never contains usefull informations
 htmlFileFold = f"resources/etf.html"
 
 # Hash map used to manage multiple languages and data sets within a single script.
-splitHashMap = {"en": ["Top 10 Holdings", "Basics </h2>", "Countries", "Sectors", "Show more", "out of ", "Basics"], 
+splitHashMap = {"en": ["Top 10 Holdings", "Basics </h2>", "Countries", "Sectors", "Show more", "out of ", "Basics"],
                       "it": ["Prime 10 partecipazioni", "Indicatore sintetico di spesa (TER)", "Paesi", "Settori", "Mostra di più", "su ", "Nozioni di base"]}
     
 # Hash map used to manage multiple languages in the output
-outputHashMap = {"en": ["FINAL DATA:", "Number of holdings:", ", the percentage of the top 10 holdings within the ETF:", 
-                              "The holdings to which the ETF is most exposed are:", "The countries to which the ETF is most exposed are:", 
+outputHashMap = {"en": ["FINAL DATA:", "Number of holdings:", ", the percentage of the top 10 holdings within the ETF:",
+                              "The holdings to which the ETF is most exposed are:", "The countries to which the ETF is most exposed are:",
                               "The sectors to which the ETF is most exposed are:", "Holding", "with the percentage of"],
-                       "it": ["DATI FINALI:", "Numero di partecipazioni:", ", la percentuale delle prime 10 partecipazioni dell'ETF è:", 
-                              "Le partecipazioni alle quali l'ETF è maggiormente esposto sono:", 
-                              "Gli stati ai quali l'ETF è maggiormente esposto sono:", "I settori ai quali l'ETF è maggiormente esposto sono:",
-                              "Partecipazione", "con la percentuale di"]}
+                 "it": ["DATI FINALI:", "Numero di partecipazioni:", ", la percentuale delle prime 10 partecipazioni dell'ETF è:",
+                        "Le partecipazioni alle quali l'ETF è maggiormente esposto sono:",
+                        "Gli stati ai quali l'ETF è maggiormente esposto sono:", "I settori ai quali l'ETF è maggiormente esposto sono:",
+                        "Partecipazione", "con la percentuale di"]}
+
+# Hash map used to manage inputs
+inputHashMap = {"en" : "Insert the ETF's ISIN", "it" : "Inserisci l'ISIN dell'ETF"}
 
 # Hash map used to manage multiple languages of the general data, separated from the outputHashMap just to make the code a little bit cleaner
 generalDataHashMap = {"en": ["Index","Investment focus","Fund size","Total expense ratio","Replication","Legal structure",
@@ -35,8 +43,11 @@ generalDataHashMap = {"en": ["Index","Investment focus","Fund size","Total expen
                              "Data di lancio/ quotazione","Politica di distribuzione","Frequenza di distribuzione","Domicilio del fondo","Emittente", "Dati generali:"]}
 
 # Hash map used to manage multiple languages when missing data occurs
-dataNotFoundHashMap = {"en": ["Data not found", "It is impossible to retrieve the holdings data."], 
+dataNotFoundHashMap = {"en": ["Data not found", "It is impossible to retrieve the holdings data."],
                        "it": ["Dati non disponibili","Impossibile reperire i dati riferiti alle partecipazioni dell'ETF"]}
+
+#Array of the API's supported languages
+supportedLanguages = ["en", "it"] # List of the implemented languages
 
 ########################################################################################## Utils functions
 
@@ -46,32 +57,34 @@ def cleanHtml():
         if os.path.exists(htmlFileFold):
             with open(htmlFileFold, 'w', encoding="utf8") as file:
                 file.write("")
+        return 0
     except Exception as e:
         print("The program runned into an unexpected error")
-        #print(f"The program runned into the error: {e}")
+        print(f"The program runned into the error: {e}")
+        return -1
         
 def debug(debug):
     for s in debug:
         print(f"{s}\n")
+        return 0
  
-def getFile(ISIN, language):
+def getFile(ISIN: str, language: str) -> list[str]:
     try:
         isin = ISIN.upper() # The ISIN letters are allways uppercase
         language = language.lower()  # Making the script not case-sensitive
-        supported_languages = ["en", "it"] # List of the implemented languages
-        
-        if language not in supported_languages:
+
+        if language not in supportedLanguages:
             print("\nERROR: The selected language is not implemented yet")
             return -1
-        
+
         if len(isin) != 12:
             print("\nERROR: Bad ISIN format, please check the ISIN code")
             return -1
-        
+
         # Getting the correct link
         url = f"https://www.justetf.com/{language}/etf-profile.html?isin={isin}#overview"
         htmlFilePath = f"resources/etf.html"
-        
+
         # Downloading the HTML from the site
         urlretrieve(url, htmlFilePath)
         htmlFilePath, headers = urlretrieve(url, htmlFilePath)
@@ -80,12 +93,13 @@ def getFile(ISIN, language):
         # Opening and reading the downloaded file
         with open(htmlFilePath, 'r', encoding="utf8") as file:
             output = file.read()
-        
+
         output = output.split("\n")
         return output
     except Exception as e:
         print("The program runned into an unexpected error")
-        #print(f"The program runned into the error: {e}")
+        print(f"The program runned into the error: {e}")
+        return ["-"]
 
 ##########################################################################################
 # Data Handling Functions
@@ -96,20 +110,39 @@ def getFile(ISIN, language):
 # For the first string parameter and the flag, follow the instructions below:
 # Set the "flag" attribute to "True" if you want to call a specific function (e.g. To get the Ticker, use "getTicker(string, True)") without retrieving other data.
 # If the flag is set to "True," the "string" parameter should be the entire HTML file downloaded using the "urlretrieve(url, htmlFilePath)" function.
-# The "flag" attribute gonna be "False" only in the case where you want all the parameters and you allready have all the right strings to parse (e.g. the "scrap" function)
+# The "flag" attribute gonna be "False" only in the case where you want all the parameters and you allready have all the right strings to parse (e.g. the "scrape" function)
 
 ##########################################################################################
 
-def getTicker(tickerString, singleFunctionCall):
-    # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF    
-    try: 
+# Well known data get functions
+
+def getSupportedLanguages() -> list[str]:
+    # Returning a list of the supported languages in case of API usage in an external script
+    return supportedLanguages
+
+def getOutputStringHashMap():
+    # Returning the hashmap of the output strings in all the supported languages
+    return outputHashMap
+
+def getGeneralDataOutputHashMap():
+    # Returning the name of the parameters of all the general data in every supported languages
+    return generalDataHashMap
+
+def getInputHashMap():
+    return inputHashMap
+
+# ETF data get functions
+
+def getTicker(tickerString: str, singleFunctionCall: bool) -> str:
+    # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF
+    try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
-            for x in range(len(tickerString) - USELESS_DATA -1):            
+            for x in range(len(tickerString) - USELESS_DATA -1):
                 if "<title>" in tickerString[x + USELESS_DATA]:
                     tickerString = tickerString[x + USELESS_DATA]
                     print("\nDEBUG: Ticker found")
                     break
-            
+
         split = tickerString.split("</title>")
         split = split[0].split("|")
         ticker = split[1].replace(" ", "")
@@ -118,19 +151,19 @@ def getTicker(tickerString, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
+        print(f"The program runned into the error: {e}")
         return "-"
 
-def getName(nameString, singleFunctionCall):   
+def getName(nameString: str, singleFunctionCall: bool) -> str:
     # Getting the Name of the ETF from the "name" string
-    try:   
+    try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
-            for x in range(len(nameString) - USELESS_DATA -1):            
+            for x in range(len(nameString) - USELESS_DATA -1):
                 if "<title>" in nameString[x + USELESS_DATA]:
                     nameString = nameString[x + USELESS_DATA]
                     print("\nDEBUG: Title found")
                     break
-                        
+
         split = nameString.split("</title>")
         split = split[0].split("|")
         name = split[0].replace("<title>", "")
@@ -142,10 +175,10 @@ def getName(nameString, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
+        print(f"The program runned into the error: {e}")
         return "-"
 
-def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
+def getPercTenHoldings(tenHoldingsString: str, language: str, singleFunctionCall: bool) -> list[str]:
         # Getting the percentage of the first 10 participations and the total number of holdings of the ETF
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
@@ -154,7 +187,7 @@ def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
                     tenHoldingsString = tenHoldingsString[x + USELESS_DATA]
                     print("DEBUG: Holdings data found")
                     break
-                
+
         split = tenHoldingsString.split("<div>")
         split = split[3].split("</span>")
         split = split[0].split("<")
@@ -165,10 +198,10 @@ def getPercTenHoldings(tenHoldingsString, language, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
-        return "-"
-        
-def getHoldingsData(sHolding, language, singleFunctionCall):
+        print(f"The program runned into the error: {e}")
+        return ["-"]
+
+def getHoldingsData(sHolding: str, language: str, singleFunctionCall: bool) -> list[str]:
     holdings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]  # len=20, max number of holdings shown on JustETF is 10
     flagState = 0
     try:
@@ -180,9 +213,9 @@ def getHoldingsData(sHolding, language, singleFunctionCall):
                     else:
                         sHolding = sHolding[x + USELESS_DATA]
                         print("DEBUG: State data found")
-            
+
             sHolding = sHolding.split(splitHashMap[language][2])
-            sHolding = sHolding[0].split("<td>")        
+            sHolding = sHolding[0].split("<td>")
         
         for n in range(len(sHolding) - 1):
             if n % 2 == 0:
@@ -200,13 +233,13 @@ def getHoldingsData(sHolding, language, singleFunctionCall):
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
-        return "-"
+        print(f"The program runned into the error: {e}")
+        return ["-"]
 
-def getCountriesData(sCountries, language, singleFunctionCall):
+def getCountriesData(sCountries: str, language: str, singleFunctionCall: bool) -> list[str]:
     countries = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of countries shown on JustETF is 5
     flagState = 0
-    
+
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
             for x in range(len(sCountries) - USELESS_DATA -1):
@@ -216,14 +249,14 @@ def getCountriesData(sCountries, language, singleFunctionCall):
                     else:
                         sCountries = sCountries[x + USELESS_DATA]
                         print("DEBUG: State data found")
-                        
+
             split1 = sCountries.split(splitHashMap[language][2])
             sCountries = split1[1]
             sCountries = sCountries.split(splitHashMap[language][3])
             sCountries = sCountries[0].split(splitHashMap[language][4])
             sCountries = sCountries[0]
             sCountries = sCountries.split("<td>")
-                       
+
         print("\nDEBUG: Collecting countries data\n")
         for n in range(len(sCountries) - 1):
             if n % 2 == 0:
@@ -241,12 +274,12 @@ def getCountriesData(sCountries, language, singleFunctionCall):
         print("The program runned into an unexpected error")
         cleanHtml()
         print(f"The program runned into the error: {e}")
-        return "-"
-                
-def getSectorsData(sSectors, language, singleFunctionCall):
+        return ["-"]
+
+def getSectorsData(sSectors: str, language: str, singleFunctionCall: bool) -> list[str]:
     sectors = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of sectors shown on JustETF is 5
     flagState = 0
-    
+
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
             for x in range(len(sSectors) - USELESS_DATA -1):
@@ -257,15 +290,15 @@ def getSectorsData(sSectors, language, singleFunctionCall):
                         sSectors = sSectors[x + USELESS_DATA]
                         print("DEBUG: Sectors data found")
                         break
-                    
+
             split1 = sSectors.split(splitHashMap[language][2])
             split1 = split1[1]
             split1 = split1.split(splitHashMap[language][3])
             sSectors = split1[1].split(splitHashMap[language][4])
             sSectors = sSectors[0]
             sSectors = sSectors.split("<td>")
-            
-        print("\nDEBUG: Collecting sectors data\n")       
+
+        print("\nDEBUG: Collecting sectors data\n")
         for n in range(len(sSectors) - 1):
             if n % 2 == 0:
                 sectors[n] = sSectors[n + 1].replace("</td>", "")
@@ -275,16 +308,16 @@ def getSectorsData(sSectors, language, singleFunctionCall):
                 sectors[n] = sectors[n][1].split("<")
                 sectors[n] = sectors[n][0]
                 print(f"DEBUG: {sectors[n]}")
-        #debug(sectors)       
+        #debug(sectors)
         cleanHtml()
         return sectors
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
-        return "-"
-        
-def getGeneralInformations(sInformations, language, singleFunctionCall):
+        print(f"The program runned into the error: {e}")
+        return ["-"]
+
+def getGeneralInformations(sInformations: str, language: str, singleFunctionCall: bool) -> list[str]:
     finalData = ["","","","","","","","","","","","","","","",""]
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
@@ -297,27 +330,27 @@ def getGeneralInformations(sInformations, language, singleFunctionCall):
         print("\nDEBUG: Collecting ETF general data\n")
         sInformations = sInformations.split(splitHashMap[language][6])
         #debug(sInformations)
-        
+
         #Italian and english HTML have a different formatting
         if language == "it":
             sInformations = sInformations[2].split("</tbody>")
         elif language == "en":
             sInformations = sInformations[1].split("</tbody>")
-            
+
         sInformations = sInformations[0].split("td")
         sInformationsBackup = sInformations
         count = 0
-        
+
         # Getting all the general data of the ETF
         for i in range(int((len(sInformations)-1)/4)):
             sInformations = sInformationsBackup
             split = sInformations[(i*4)+3].split(">")
-            
+
             if len(split) > 2: # The wanted data are at the index 2 or 1 in case the index 2 does not exists
                 data = split[2].split("<")
             else:
                 data = split[1].split("<")
-            
+
             if count == 2: # Index 2 contains the ETF total value but the sring is " EUR 76.120 mln " so you need to delate the first " "
                 listData = list(data[0])
                 listData[0] = ""
@@ -327,27 +360,27 @@ def getGeneralInformations(sInformations, language, singleFunctionCall):
                 finalData[count] = data[0]
             print(f"DEBUG: \"{finalData[count]}\"")
             count += 1
-        cleanHtml()   
+        cleanHtml()
         return finalData
     except Exception as e:
         print("The program runned into an unexpected error")
         cleanHtml()
-        #print(f"The program runned into the error: {e}")
-        return "-"
-        
-########################################################################################## Scraping all data using the functions
-    
-def scrap(myISIN, myLanguage):
+        print(f"The program runned into the error: {e}")
+        return ["-"]
+
+########################################################################################## scraping all data using the functions
+
+def scrape(myISIN: str, myLanguage: str) -> str:
     print("\n---------------------------------------------------------------------------")
 
     # Initialize htmlDataiables for extracting ETF data
     stateAndSectorData = ""
-    firstTenPartecipations = ""
+    firstTenHoldings = ""
     generalData = ""
     ticker = ""
     name = ""
     flagData = 0
-    flagPartecipation = 0 
+    flagHoldings = 0
     flagName = 0 
     flagState = 0
     flagTicker = 0
@@ -356,38 +389,38 @@ def scrap(myISIN, myLanguage):
     # Basic error handling and data download
     # URL composition and HTML download
     try:
-        
+
         htmlData = getFile(myISIN, myLanguage)
         if htmlData != -1: #Case where both language and ISIN are good
             isin = myISIN.upper() # The ISIN letters are allways uppercase
             language = myLanguage.lower()  # Making the script not case-sensitive
         else:
             return -1
-        
-        ##########################################################################################
-        # Finding the correct lines with the data by cycling through all the rows in the HTML file
+
+    ##########################################################################################
+    # Finding the correct lines with the data by cycling through all the rows in the HTML file
         flagState = 0
         for x in range(len(htmlData) - USELESS_DATA):
-            
-            if flagName == 1 and flagData == 1 and flagPartecipation == 1 and flagTicker == 1 and flagState == 1:
+
+            if flagName == 1 and flagData == 1 and flagHoldings == 1 and flagTicker == 1 and flagState == 1:
                 print("DEBUG: All data found")
                 break
-            
+
             if "<title>" in htmlData[x + USELESS_DATA]:
                 name = htmlData[x + USELESS_DATA]
                 print("\nDEBUG: Title found")
                 flagName = 1
-                
+
             if splitHashMap[language][0] in htmlData[x + USELESS_DATA]:
-                firstTenPartecipations = htmlData[x + USELESS_DATA]
+                firstTenHoldings = htmlData[x + USELESS_DATA]
                 print("DEBUG: Holdings data found")
-                flagPartecipation = 1
-                
+                flagHoldings = 1
+
             if splitHashMap[language][1] in htmlData[x + USELESS_DATA]:
                 generalData = htmlData[x + USELESS_DATA]
                 print("DEBUG: General data found")
                 flagData = 1
-                
+
             if splitHashMap[language][2] in htmlData[x + USELESS_DATA]:
                 if flagState == 0:
                     flagState = 1
@@ -412,11 +445,11 @@ def scrap(myISIN, myLanguage):
             splitholdings = splitholdings[0].split("<td>")
             splitCountries = splitCountries.split("<td>")
             splitSectors = splitSectors.split("<td>")
-            
+
             arrHoldings = getHoldingsData(splitholdings, language, callFlag)
             arrCountries = getCountriesData(splitCountries, language, callFlag)
             arrSectors = getSectorsData(splitSectors, language, callFlag)
-            
+
             #Formatting the countries and sectors data correctly
             sCountries = ""
             for i, s in enumerate(arrCountries):
@@ -427,7 +460,7 @@ def scrap(myISIN, myLanguage):
                 else:
                     sCountries += f"{s}, "
                     i += 1
-              
+
             sSectors = ""
             for i, s in enumerate(arrSectors):
                 if s == "": break
@@ -443,90 +476,90 @@ def scrap(myISIN, myLanguage):
             listName = list(sCountries)
             listName[len(sCountries) - 2] = ""
             sCountries = "".join(listName)
-            
+
         else: # Some ETFs may not contain the data about holdings, countries and sectors on the JustETF page
             sCountries = dataNotFoundHashMap[language][0]
             sSectors = dataNotFoundHashMap[language][0]
-               
-        if flagPartecipation:     
-            HoldingsData = getPercTenHoldings(firstTenPartecipations, language, callFlag)
+
+        if flagHoldings:
+            HoldingsData = getPercTenHoldings(firstTenHoldings, language, callFlag)
             nHoldings = HoldingsData[0]
-            percTenHoldings = HoldingsData[1]     
+            percTenHoldings = HoldingsData[1]
         else: # Some ETFs may not contain the data about number of holdings and percentage of the first 10 holdings on the JustETF page
             nHoldings = "-"
             percTenHoldings = "-"
-            
+
         finalGeneralData = getGeneralInformations(generalData, language, callFlag)
-        
-        ########################################################################################### 
+
+        ###########################################################################################
         # Output data formatting
         outputString = ""
         outputString += (f"ETF: {name}, Ticker: \"{ticker}\", ISIN: {isin}\n")
         outputString += (f"{outputHashMap[language][1]} {nHoldings}{outputHashMap[language][2]} {percTenHoldings}\n\n")
-    
-        if flagPartecipation == 1:
-            outputString += (f"{outputHashMap[language][3]}\n")    
+
+        if flagHoldings == 1:
+            outputString += (f"{outputHashMap[language][3]}\n")
             for i in range(int(len(arrHoldings)/2)):
                 outputString += (f"{outputHashMap[language][6]}: {arrHoldings[i*2]} {outputHashMap[language][7]} {arrHoldings[i*2+1]}\n")
         else:
-             outputString += (f"{dataNotFoundHashMap[language][1]}\n") 
+             outputString += (f"{dataNotFoundHashMap[language][1]}\n")
 
         outputString += (f"\n{outputHashMap[language][4]} {sCountries}\n")
         outputString += (f"{outputHashMap[language][5]} {sSectors}\n\n")
         outputString += (f"{generalDataHashMap[language][len(generalDataHashMap[language])-1]}\n")
         for i in range(len(finalGeneralData)):
             outputString += (f"{generalDataHashMap[language][i]}: {finalGeneralData[i]}\n")
-        
+
         #Final print for debug purposes
-        print("\n---------------------------------------------------------------------------\nDEBUG:") 
+        print("\n---------------------------------------------------------------------------\nDEBUG:")
         print(f"{outputHashMap[language][0]} \n")
         print(outputString)
         # End of the final print debug
-                     
+
         cleanHtml() #Cleaning the file
         return outputString
-    
+
     except Exception as e:
         print(f"\nERROR: Unexpected error occoured, please verify the ISIN and retry")
         # Unomment this out show the error that caused the program to fail
-        print(f"DEBUG: The error the program runned in is \"{e}\"\n") 
+        print(f"DEBUG: The error the program runned in is \"{e}\"\n")
         # All errors are likely caused by the non-existence of the inserted ISIN.
         print("---------------------------------------------------------------------------\n")
         cleanHtml()
         return -1
-        
+
 ###########################################################################################
 # Main function
 if __name__ == "__main__":
-    
+
     htmlFilePath = f"resources/etf.html"
     # To successfully call the function, insert the ISIN as the first parameter and the language as the second parameter.
     # The only two languages supported at the moment are Italian (IT) and English (EN).
     # The function returns -1 in case of an error and returns the data if the process succeeds.
 
-    #t1 = time.time()
-    #ack = scrap("IE00B4L5Y983", "it") #Case language selected: Italian
-    #t2 = time.time()
-    #ack = scrap("IE00B4L5Y983", "en") #Case language selected: English
-    #t3 = time.time()
-    #ack = scrap("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
-    #t4 = time.time()
-    #ack = scrap("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
-    #t5 = time.time()
-    #ack = scrap("IE00B4L5Y983", "de") #Case language selected not implemented
-    #t6 = time.time()
-    #ack = scrap("IEY983", "en") #Case ISIN not in the right format
-    #t7 = time.time()
-    #ack = scrap("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
-    #t8 = time.time()
+    t1 = time.time()
+    ack = scrape("IE00B4L5Y983", "it") #Case language selected: Italian
+    t2 = time.time()
+    ack = scrape("IE00B4L5Y983", "en") #Case language selected: English
+    t3 = time.time()
+    ack = scrape("IE00B4ND3602", "it") #Case language selected: Italian, ETF with missing data
+    t4 = time.time()
+    ack = scrape("IE00B4ND3602", "en") #Case language selected: English, ETF with missing data
+    t5 = time.time()
+    ack = scrape("IE00B4L5Y983", "de") #Case language selected not implemented
+    t6 = time.time()
+    ack = scrape("IEY983", "en") #Case ISIN not in the right format
+    t7 = time.time()
+    ack = scrape("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
+    t8 = time.time()
 
-    #print(f"\nDEBUG: Full page, language selected \"it\": {t2-t1}s")
-    #print(f"DEBUG: Full page, language selected \"en\": {t3-t2}s")
-    #print(f"DEBUG: Missing data, language selected \"it\": {t4-t3}s")
-    #print(f"DEBUG: Missing data, language selected \"en\": {t5-t4}s")
-    #print(f"DEBUG: Error type \"Language not implemented\": {t6-t5}s")
-    #print(f"DEBUG: Error type \"ISIN not in the right format\": {t7-t6}s")
-    #print(f"DEBUG: Error type \"The current ISIN does not exist\": \"en\": {t8-t7}s")
+    print(f"\nDEBUG: Full page, language selected \"it\": {t2-t1}s")
+    print(f"DEBUG: Full page, language selected \"en\": {t3-t2}s")
+    print(f"DEBUG: Missing data, language selected \"it\": {t4-t3}s")
+    print(f"DEBUG: Missing data, language selected \"en\": {t5-t4}s")
+    print(f"DEBUG: Error type \"Language not implemented\": {t6-t5}s")
+    print(f"DEBUG: Error type \"ISIN not in the right format\": {t7-t6}s")
+    print(f"DEBUG: Error type \"The current ISIN does not exist\": \"en\": {t8-t7}s")
 
     ###########################################################################################
 
@@ -551,8 +584,10 @@ if __name__ == "__main__":
     t8 = time.time()
     countriesData = getCountriesData(htmlFile, language, True) # Returns all the data of the countries as an array
     t9 = time.time()
-    totaleScarp = scrap(isin, language) # Getting all the data and a formatted output string to return
+    totaleScarp = scrape(isin, language) # Getting all the data and a formatted output string to return
     t10 = time.time()
+
+    # Printing the time usage of all the functions
 
     print(f"\nDEBUG: Time to get the file: {t2-t1}")
     print(f"DEBUG: Time to get name: {t3-t2}")
@@ -565,4 +600,4 @@ if __name__ == "__main__":
     print(f"DEBUG: Time to get the total scarp: {t10-t9}")
     print("\n")
     cleanHtml()
-    ack = scrap("IE00B4L5Y983", "it") #Case language selected: Italian
+    ack = scrape("IE00B4L5Y983", "it") #Case language selected: Italian
