@@ -25,11 +25,11 @@ splitHashMap = {"en": ["Top 10 Holdings", "Basics </h2>", "Countries", "Sectors"
 # Hash map used to manage multiple languages in the output
 outputHashMap = {"en": ["FINAL DATA:", "Number of holdings:", ", the percentage of the top 10 holdings within the ETF:",
                               "The holdings to which the ETF is most exposed are:", "The countries to which the ETF is most exposed are:",
-                              "The sectors to which the ETF is most exposed are:", "Holding", "with the percentage of"],
+                              "The sectors to which the ETF is most exposed are:", "Holding", "with the percentage of", "See more:"],
                  "it": ["DATI FINALI:", "Numero di partecipazioni:", ", la percentuale delle prime 10 partecipazioni dell'ETF è:",
                         "Le partecipazioni alle quali l'ETF è maggiormente esposto sono:",
                         "Gli stati ai quali l'ETF è maggiormente esposto sono:", "I settori ai quali l'ETF è maggiormente esposto sono:",
-                        "Partecipazione", "con la percentuale di"]}
+                        "Partecipazione", "con la percentuale di", "Esplora:"]}
 
 # Hash map used to manage inputs
 inputHashMap = {"en" : "Insert the ETF's ISIN", "it" : "Inserisci l'ISIN dell'ETF"}
@@ -46,7 +46,7 @@ generalDataHashMap = {"en": ["Index","Investment focus","Fund size","Total expen
 dataNotFoundHashMap = {"en": ["Data not found", "It is impossible to retrieve the holdings data."],
                        "it": ["Dati non disponibili","Impossibile reperire i dati riferiti alle partecipazioni dell'ETF"]}
 
-#Array of the API's supported languages
+# Array of the API's supported languages
 supportedLanguages = ["en", "it"] # List of the implemented languages
 
 ########################################################################################## Utils functions
@@ -69,6 +69,12 @@ def debug(debug):
         return 0
  
 def getFile(ISIN: str, language: str) -> list[str]:
+    
+    # Description of the function for the help section
+    """
+    This function returns the HTML file ready to be used by other functions as an array.
+    """
+    
     try:
         isin = ISIN.upper() # The ISIN letters are allways uppercase
         language = language.lower()  # Making the script not case-sensitive
@@ -118,23 +124,69 @@ def getFile(ISIN: str, language: str) -> list[str]:
 
 def getSupportedLanguages() -> list[str]:
     # Returning a list of the supported languages in case of API usage in an external script
+    
+    # Description of the function for the help section
+    """
+    This function returns a list of all the supported languages as an array.
+    """
+    
     return supportedLanguages
 
 def getOutputStringHashMap():
     # Returning the hashmap of the output strings in all the supported languages
+    
+    # Description of the function for the help section
+    """
+    This function returns an hashmap of key: [strings] for formatting output data, supporting multiple languages. \n
+    Access strings using `hash[language][index]`.\n
+    Check the example "ApiUsageExample.py" in the public repository of this file to copy the code or read the documentation.
+    """
+    
     return outputHashMap
 
 def getGeneralDataOutputHashMap():
     # Returning the name of the parameters of all the general data in every supported languages
+    
+    # Description of the function for the help section
+    """
+    This function returns an hashmap of key: [strings] for formatting the general data, supporting multiple languages.\n
+    Access strings using `hash[language][index]`.\n
+    Check the example "ApiUsageExample.py" in the public repository of this file to copy the code or read the documentation.
+    """
+
     return generalDataHashMap
 
 def getInputHashMap():
+    
+    # Description of the function for the help section
+    """
+    This function returns an hashmap of key: strings for formatting the general data, supporting multiple languages.\n
+    Access strings using `hash[language]`.\n
+    Check the example "ApiUsageExample.py" in the public repository of this file to copy the code or read the documentation.
+    """
+    
     return inputHashMap
 
 # ETF data get functions
 
+def getURL(ISIN: str, language: str) -> str:
+    # Returning the URL of the page of the ETF on JustETF
+    
+    # Description of the function for the help section
+    """
+    This function returns the URL link to the correct JustETF page as a string.
+    """
+    
+    return f"https://www.justetf.com/{language}/etf-profile.html?isin={ISIN}#overview"
+
 def getTicker(tickerString: str, singleFunctionCall: bool) -> str:
     # Getting the Ticker from the "name" string that contains both Name and Ticker of the ETF
+    
+    # Description of the function for the help section
+    """
+    This function returns the Ticker of the ETF as a string.
+    """
+    
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
             for x in range(len(tickerString) - USELESS_DATA -1):
@@ -156,6 +208,12 @@ def getTicker(tickerString: str, singleFunctionCall: bool) -> str:
 
 def getName(nameString: str, singleFunctionCall: bool) -> str:
     # Getting the Name of the ETF from the "name" string
+    
+    # Description of the function for the help section
+    """
+    This function returns the name of the ETF as a string.
+    """
+    
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
             for x in range(len(nameString) - USELESS_DATA -1):
@@ -179,7 +237,15 @@ def getName(nameString: str, singleFunctionCall: bool) -> str:
         return "-"
 
 def getPercTenHoldings(tenHoldingsString: str, language: str, singleFunctionCall: bool) -> list[str]:
-        # Getting the percentage of the first 10 participations and the total number of holdings of the ETF
+    # Getting the percentage of the first 10 participations and the total number of holdings of the ETF
+    
+    # Description of the function for the help section
+    """
+    This function returns the number of holding inside the ETF and the what percentage they have on the total as a string array.\n
+    Output format: [NumberOfPartecipations, PercentageOfTheFirstTenPartecipations].\n
+    Example: ["1700", "9.87%"]
+    """
+    
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
             for x in range(len(tenHoldingsString) - USELESS_DATA -1):
@@ -202,7 +268,17 @@ def getPercTenHoldings(tenHoldingsString: str, language: str, singleFunctionCall
         return ["-"]
 
 def getHoldingsData(sHolding: str, language: str, singleFunctionCall: bool) -> list[str]:
+    # Getting the percentage of the first 10 participations and the percentage for each holding
+    
+    # Description of the function for the help section
+    """
+    This function returns the 10 holdings with the highest percentage in the ETF as a string array.\n
+    Output format: [FirstCompany, PercentageFirstCompany, ... , 10ThCompany, Percentage10THCompany].\n
+    Example: ["APPLE", "5%", ... , "Microsoft", "2%"]
+    """
+    
     holdings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]  # len=20, max number of holdings shown on JustETF is 10
+    
     flagState = 0
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
@@ -237,7 +313,17 @@ def getHoldingsData(sHolding: str, language: str, singleFunctionCall: bool) -> l
         return ["-"]
 
 def getCountriesData(sCountries: str, language: str, singleFunctionCall: bool) -> list[str]:
+    # Getting the percentage of the first 5 countries and the percentage for each country
+    
+    # Description of the function for the help section
+    """
+    This function returns the 5 countries with the highest percentage in the ETF as a string array.\n
+    Output format: [FirstCountry, PercentageFirstCountry, ... , 5ThCountry, Percentage5THCountry].\n
+    Example: ["USA", "5%", ... , "Japan", "2%"]
+    """
+    
     countries = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of countries shown on JustETF is 5
+    
     flagState = 0
 
     try:
@@ -277,6 +363,15 @@ def getCountriesData(sCountries: str, language: str, singleFunctionCall: bool) -
         return ["-"]
 
 def getSectorsData(sSectors: str, language: str, singleFunctionCall: bool) -> list[str]:
+    # Getting the percentage of the first 5 sectors and the percentage for each sector
+    
+    # Description of the function for the help section
+    """
+    This function returns the 5 sectors with the highest percentage in the ETF as a string array.\n
+    Output format: [FirstSector, PercentageFirstSector, ... , 5ThSector, Percentage5THSector].\n
+    Example: ["Tech", "5%", ... , "Medical", "2%"]
+    """
+    
     sectors = ["", "", "", "", "", "", "", "", "", ""]  # len=10, max number of sectors shown on JustETF is 5
     flagState = 0
 
@@ -318,6 +413,14 @@ def getSectorsData(sSectors: str, language: str, singleFunctionCall: bool) -> li
         return ["-"]
 
 def getGeneralInformations(sInformations: str, language: str, singleFunctionCall: bool) -> list[str]:
+    # Getting the general informations of the ETF
+    
+    # Description of the function for the help section
+    """
+    This function returns the general informations of the ETF as a string array.\n
+    Output format: ["Index","Investment focus","Fund size","Total expense ratio","Replication","Legal structure","Strategy risk","Sustainability","Fund currency","Currency risk","Volatility 1 year (in EUR)","Inception/ Listing Date","Distribution policy","Distribution frequency","Fund domicile","Fund Provider", "General data:"].\n
+    """
+    
     finalData = ["","","","","","","","","","","","","","","",""]
     try:
         if singleFunctionCall: #Getting the correct data to parse in case of the call of the single function
@@ -371,6 +474,14 @@ def getGeneralInformations(sInformations: str, language: str, singleFunctionCall
 ########################################################################################## scraping all data using the functions
 
 def scrape(myISIN: str, myLanguage: str) -> str:
+    # Getting all the data and returning a formatted string
+
+    # Description of the function for the help section
+    """
+    Retrieves all the data and returns a preformatted string using the selected language.
+    """
+    
+    
     print("\n---------------------------------------------------------------------------")
 
     # Initialize htmlDataiables for extracting ETF data
@@ -428,6 +539,7 @@ def scrape(myISIN: str, myLanguage: str) -> str:
                     stateAndSectorData = htmlData[x + USELESS_DATA]
                     print("DEBUG: State data found")
 
+        url = getURL(myISIN, myLanguage)
         ticker = getTicker(name, callFlag)
         name = getName(name, callFlag)
 
@@ -509,7 +621,8 @@ def scrape(myISIN: str, myLanguage: str) -> str:
         outputString += (f"{generalDataHashMap[language][len(generalDataHashMap[language])-1]}\n")
         for i in range(len(finalGeneralData)):
             outputString += (f"{generalDataHashMap[language][i]}: {finalGeneralData[i]}\n")
-
+        outputString += (f"{outputHashMap[language][6]} {url}")
+        
         #Final print for debug purposes
         print("\n---------------------------------------------------------------------------\nDEBUG:")
         print(f"{outputHashMap[language][0]} \n")
