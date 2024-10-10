@@ -16,14 +16,15 @@ language = input(f"Select a language, the supported languages are: {supportedLan
 isin = input(f"{inputStrings[language]}\n")
 
 #Getting all the possible data I can get from the ETF
+url = getURL(isin, language)
 name = getName(htmlFile, True) # Getting the name
 ticker = getTicker(htmlFile, True) # Getting the ticker
 generalData = getGeneralInformations(htmlFile, language, True) #Getting all the general data as an array
 tenHold = getPercTenHoldings(htmlFile, language, True) # Getting the data relevant to the number and percentage of holdings of the ETF
-totaleScarp = scrape(isin, language) # Getting all the data and a formatted output string to return
 sectorsData =  getSectorsData(htmlFile, language, True) # Returns all the data of the sectors as an array
 countriesData = getCountriesData(htmlFile, language, True) # Returns all the data of the countries as an array
 holdingsData = getHoldingsData(htmlFile, language, True) # Returns all the data of the Holdings as an array
+totaleScarp = scrape(isin, language) # Getting all the data and a formatted output string to return
 
 # Composing the output string based on the selected language using the data I got with the single functions
 outputString = ""
@@ -40,8 +41,10 @@ else:
 outputString += (f"\n{outputHashMap[language][4]} {countriesData}\n")
 outputString += (f"{outputHashMap[language][5]} {countriesData}\n\n")
 outputString += (f"{generalDataHashMap[language][len(generalDataHashMap[language])-1]}\n")
+
 for i in range(len(generalData)):
     outputString += (f"{generalDataHashMap[language][i]}: {generalData[i]}\n")
+outputString += (f"{outputHashMap[language][6]} {url}")
 
 # Printing the datas I've got using the functions
 print("\n")
