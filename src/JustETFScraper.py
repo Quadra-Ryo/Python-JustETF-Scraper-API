@@ -1,3 +1,4 @@
+# Imports that are used in the script
 import os
 from urllib.request import urlretrieve
 import time
@@ -10,13 +11,13 @@ import time
 
 ##########################################################################################
 # In case you don't want to show the debug print on the console
-# CTRL + F -> Find "print" -> Replace "#print"
+# CTRL + F -> Find "print" -> Replace "print"
 # To switch back to the debug mode 
-# CTRL + F -> Find "#print" -> Replace "print"
+# CTRL + F -> Find "print" -> Replace "print"
 ##########################################################################################
 
 USELESS_DATA = 184 # Before rr. 184 the HTML file never contains usefull informations
-htmlFileFold = f"resources/etf.html"
+htmlFileFold = f"resources/etf.html" # Path were the html file is gonna be downloaded
 
 # Hash map used to manage multiple languages and data sets within a single script.
 splitHashMap = {"en": ["Top 10 Holdings", "Basics </h2>", "Countries", "Sectors", "Show more", "out of ", "Basics"],
@@ -52,7 +53,7 @@ supportedLanguages = ["en", "it"] # List of the implemented languages
 ########################################################################################## Utils functions
 
 def cleanHtml():
-     # Open the file in write mode to overwrite it with an empty string to clean the html
+    # Open the file in write mode to overwrite it with an empty string to clean the html
     try:
         if os.path.exists(htmlFileFold):
             with open(htmlFileFold, 'w', encoding="utf8") as file:
@@ -68,22 +69,24 @@ def debug(debug):
         print(f"{s}\n")
         return 0
  
-def getFile(ISIN: str, language: str) -> list[str]:
-    
+def getFile(ISIN: str, language: str) -> list[str]:    
     # Description of the function for the help section
     """
     This function returns the HTML file ready to be used by other functions as an array.
     """
     
     try:
-        isin = ISIN.upper() # The ISIN letters are allways uppercase
-        language = language.lower()  # Making the script not case-sensitive
+        # Making the script not case-sensitive
+        isin = ISIN.upper() # The ISIN letters are always uppercase
+        language = language.lower() # The language is always lowercase
 
+        # Checking if the language is in the list of the implemented languages
         if language not in supportedLanguages:
             print("\nERROR: The selected language is not implemented yet")
             return -1
-
-        if len(isin) != 12:
+        
+        # Checking for the correct ISIN format
+        if not((len(isin) == 12) and (not(isin[0].isnumeric())) and (not(isin[1].isnumeric()))):
             print("\nERROR: Bad ISIN format, please check the ISIN code")
             return -1
 
@@ -99,9 +102,11 @@ def getFile(ISIN: str, language: str) -> list[str]:
         # Opening and reading the downloaded file
         with open(htmlFilePath, 'r', encoding="utf8") as file:
             output = file.read()
-
+        
+        # Splitting the string in lines to work in a better way
         output = output.split("\n")
         return output
+    
     except Exception as e:
         print("The program runned into an unexpected error")
         print(f"The program runned into the error: {e}")
@@ -120,7 +125,7 @@ def getFile(ISIN: str, language: str) -> list[str]:
 
 ##########################################################################################
 
-# Well known data get functions
+# Get functions of the well known data
 
 def getSupportedLanguages() -> list[str]:
     # Returning a list of the supported languages in case of API usage in an external script
@@ -167,7 +172,7 @@ def getInputHashMap():
     
     return inputHashMap
 
-# ETF data get functions
+# Get functions of the ETF data
 
 def getURL(ISIN: str, language: str) -> str:
     # Returning the URL of the page of the ETF on JustETF
@@ -661,7 +666,7 @@ if __name__ == "__main__":
     t5 = time.time()
     ack = scrape("IE00B4L5Y983", "de") #Case language selected not implemented
     t6 = time.time()
-    ack = scrape("IEY983", "en") #Case ISIN not in the right format
+    ack = scrape("I000B4L5Y983", "en") #Case ISIN not in the right format
     t7 = time.time()
     ack = scrape("IE69B4L5Y983", "en") #Case not existing ISIN, "IE69B4L5Y983" does not exists
     t8 = time.time()
@@ -700,7 +705,7 @@ if __name__ == "__main__":
     totaleScarp = scrape(isin, language) # Getting all the data and a formatted output string to return
     t10 = time.time()
 
-    # Printing the time usage of all the functions
+    # printing the time usage of all the functions
 
     print(f"\nDEBUG: Time to get the file: {t2-t1}")
     print(f"DEBUG: Time to get name: {t3-t2}")
