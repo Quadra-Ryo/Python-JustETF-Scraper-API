@@ -18,6 +18,13 @@ There are two versions of the software: one in Italian and one in English. Only 
 - Unfortunately, it's not possible to determine if an ISIN exists or not. If the ISIN does not exist, the program will encounter a general error.
 - It is not possible, at the moment, to search for a product without knowing the ISIN (it’s impossible to search using only the ticker).
 
+## How to use the plug-in
+- Create a new folder in the path you like
+- Open the terminal and navigate to the path with the command "cd"
+- Use the command "git clone https://github.com/Quadra-Ryo/Python-JustETF-Scraper-API"
+- Write as a first string on your code "from JustETFScraper import *" to import the functions
+- Use the functions as you like
+
 ## Execution time of all cases before the program returns
 (Ryzen 7 5800H, 16GB DDR4 3200MHz, 30Mbps download speed):
 - Case: Full page, language selected "it" = 1.317s
