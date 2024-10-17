@@ -20,9 +20,9 @@ There are two versions of the software: one in Italian and one in English. Only 
 
 ## How to use the plug-in
 - Create a new folder in the path you like
-- Open the terminal and navigate to the path with the command "cd"
-- Use the command "git clone https://github.com/Quadra-Ryo/Python-JustETF-Scraper-API"
-- Write as a first string on your code "from JustETFScraper import *" to import the functions
+- Open the terminal and navigate to the path with the command `cd`
+- Use the command `git clone https://github.com/Quadra-Ryo/Python-JustETF-Scraper-API`
+- Write as a first string on your code `from JustETFScraper import *` to import the functions
 - Use the functions as you like
 
 ## Execution time of all cases before the program returns
